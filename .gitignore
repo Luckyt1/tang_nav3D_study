@@ -1,0 +1,13 @@
+/.omx
+/.pytest_cache
+/build
+/frames_2026-09-01_14.58.46.gv
+/frames_2026-09-01_14.58.46.pdf
+/image
+/install
+/log
+/maps
+/start_odometry.sh
+/tools
+*.bin
+src/odin_ros_driver/src/odin_ros_driver/map/
