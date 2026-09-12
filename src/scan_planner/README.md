@@ -19,7 +19,7 @@ colcon build --packages-select odin_ros_driver
 
 节点订阅 `odin1/odometry` 和 `/odin1/cloud_slam`，通过话题接收驱动或回放数据，不依赖驱动包参与编译。现有 `start_odometry.sh` 仍用于启动驱动。
 
-当前节点转发里程计为 TF，并将 `odom` 坐标系的点云转换为 PCL 点云。三个点云发布器已创建，降采样、地面分割及结果发布仍需后续实现。
+当前节点转发里程计为 TF，并将输入点云转换为 PCL 点云，执行预处理、RANSAC 地面平面分割及结果发布。坐标处理和几何结果的当前限制见[工作空间 README](../../README.md#学习时需要注意的实现边界)。
 
 ## 点云预处理
 
