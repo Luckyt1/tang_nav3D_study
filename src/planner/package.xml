@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>planner</name>
+  <version>0.1.0</version>
+  <description>Integrated SCAN-Planner local planner, controller, global planner bridge, messages, and internal planning algorithms.</description>
+  <maintainer email="iszhouxin@zju.edu.cn">SCAN-Planner maintainers</maintainer>
+  <maintainer email="popsay@163.com">bxi navigation team</maintainer>
+  <license>Apache-2.0</license>
+  <license>TODO</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>rosidl_default_generators</buildtool_depend>
+
+  <depend>ament_index_cpp</depend>
+  <depend>builtin_interfaces</depend>
+  <depend>cv_bridge</depend>
+  <depend>eigen</depend>
+  <depend>geometry_msgs</depend>
+  <depend>message_filters</depend>
+  <depend>nav_msgs</depend>
+  <depend>pcl_conversions</depend>
+  <depend>rclcpp</depend>
+  <depend>rclpy</depend>
+  <depend>sensor_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>tf2</depend>
+  <depend>tf2_geometry_msgs</depend>
+  <depend>tf2_ros</depend>
+  <depend>visualization_msgs</depend>
+
+  <build_depend>libpcl-all-dev</build_depend>
+  <exec_depend>ament_index_python</exec_depend>
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>libpcl-all</exec_depend>
+  <exec_depend>odin_ros_driver</exec_depend>
+  <exec_depend>pcl_ros</exec_depend>
+  <exec_depend>relocalization</exec_depend>
+  <exec_depend>rosidl_default_runtime</exec_depend>
+  <exec_depend>rviz2</exec_depend>
+
+  <test_depend>ament_cmake_gtest</test_depend>
+  <test_depend>ament_cmake_pytest</test_depend>
+  <test_depend>launch_testing_ament_cmake</test_depend>
+  <test_depend>python3-pytest</test_depend>
+  <test_depend>rcl_interfaces</test_depend>
+  <test_depend>sensor_msgs_py</test_depend>
+  <test_depend>tf2_msgs</test_depend>
+
+  <member_of_group>rosidl_interface_packages</member_of_group>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

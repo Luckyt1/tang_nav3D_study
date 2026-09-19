@@ -1,0 +1,65 @@
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Class: rviz_default_plugins/Grid
+      Name: Grid
+      Enabled: true
+      Cell Size: 1
+      Plane Cell Count: 20
+      Reference Frame: <Fixed Frame>
+      Value: true
+    - Class: rviz_default_plugins/PointCloud2
+      Name: Static map
+      Enabled: true
+      Alpha: 1
+      Color Transformer: AxisColor
+      Axis: Z
+      Position Transformer: XYZ
+      Style: Points
+      Size (Pixels): 3
+      Decay Time: 0
+      Topic:
+        Value: /map/static_cloud
+        Depth: 1
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Durability Policy: Volatile
+      Value: true
+    - Class: rviz_default_plugins/PoseArray
+      Name: Submap poses
+      Enabled: true
+      Color: 255; 100; 30
+      Topic:
+        Value: /map/submap_poses
+        Depth: 1
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+      Value: true
+    - Class: rviz_default_plugins/TF
+      Name: TF
+      Enabled: true
+      Value: true
+  Enabled: true
+  Global Options:
+    Background Color: 35; 35; 35
+    Fixed Frame: odom
+    Frame Rate: 30
+  Name: root
+  Tools:
+    - Class: rviz_default_plugins/Interact
+    - Class: rviz_default_plugins/MoveCamera
+    - Class: rviz_default_plugins/Select
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Distance: 15
+      Pitch: 0.65
+      Yaw: 0.8
+      Target Frame: <Fixed Frame>
+Window Geometry:
+  Width: 1280
+  Height: 800

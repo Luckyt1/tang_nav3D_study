@@ -1,0 +1,52 @@
+closed_loop_controller:
+  ros__parameters:
+    use_sim_time: false                # 是否使用仿真时钟；真机使用 false
+    time_forward: 0.8                  # 控制器在轨迹上的前视时间（秒）
+    heading_error_threshold: 0.8       # 航向误差超过该值时优先原地转向（弧度）
+    kp_pos: 0.8                        # 位置误差比例增益
+    kp_yaw: 1.5                        # 航向误差比例增益
+    max_vx: 0.35                       # X 方向最大线速度（米/秒）
+    max_vy: 0.4                        # 车体 Y 方向最大线速度（米/秒）；控制器硬上限为 0.4
+    max_vyaw: 0.55                     # 最大角速度（弧度/秒）
+    finish_dist: 0.25                  # 判定到达目标点的距离阈值（米）
+
+open_loop_controller:
+  ros__parameters:
+    use_sim_time: false                # 是否使用仿真时钟
+    frame_id: world                    # 输出里程计的父坐标系
+    child_frame_id: base               # 输出里程计的机器人子坐标系
+    publish_rate: 100.0                # 状态发布频率（赫兹）
+    yaw_min_speed: 0.05                # 克服低速死区的最小角速度（弧度/秒）
+    hold_final_position: true          # 轨迹结束后是否保持最终位置
+    init_x: -19.0                      # 初始 X 坐标（米）
+    init_y: 1.0                        # 初始 Y 坐标（米）
+    init_z: 0.3                        # 初始 Z 坐标（米）
+    init_yaw: 0.0                      # 初始偏航角（弧度）
+
+go2_kinematic_sim:
+  ros__parameters:
+    use_sim_time: false                # 是否使用仿真时钟
+    init_x: -19.0                      # 仿真初始 X 坐标（米）
+    init_y: 1.0                        # 仿真初始 Y 坐标（米）
+    init_z: 0.3                        # 仿真初始 Z 坐标（米）
+    init_yaw: 0.0                      # 仿真初始偏航角（弧度）
+    max_vx: 0.75                       # 仿真最大 X 方向速度（米/秒）
+    max_vy: 0.0                        # 仿真最大 Y 方向速度（米/秒）；仅前进和旋转
+    max_vyaw: 1.0                      # 仿真最大角速度（弧度/秒）
+    cmd_timeout: 0.3                   # 速度命令超时时间（秒）
+    sim_rate: 100.0                    # 仿真更新频率（赫兹）
+    publish_tf: true                   # 是否发布仿真机器人 TF
+    frame_id: world                    # 仿真里程计父坐标系
+    child_frame_id: base               # 仿真机器人子坐标系
+
+go2_gait_publisher:
+  ros__parameters:
+    use_sim_time: false                # 是否使用仿真时钟
+    rate: 60.0                         # 步态关节状态发布频率（赫兹）
+    gait_frequency: 2.2                # 行走步态频率（赫兹）
+    min_walk_speed: 0.05               # 开始播放行走步态的最低速度（米/秒）
+    max_walk_speed: 1.0                # 用于归一化步态幅度的最大速度（米/秒）
+    always_trot: false                 # 静止时是否仍持续播放小跑步态
+    hip_swing: 0.08                    # 髋关节摆动幅度（弧度）
+    thigh_swing: 0.32                  # 大腿关节摆动幅度（弧度）
+    calf_swing: 0.42                   # 小腿关节摆动幅度（弧度）

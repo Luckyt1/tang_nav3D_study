@@ -1,0 +1,147 @@
+scan_planner_node:
+  ros__parameters:
+    use_sim_time: false                         # 是否使用仿真时钟；真机使用 false
+
+    # 规划状态机参数
+    fsm.navi_mode: 3                            # 导航模式：1 单目标，2 预设航点，3 跟随全局路径
+    fsm.navigation_z: 0.0                       # 固定导航高度；启用 use_odom_z 时由里程计高度替代
+    fsm.use_odom_z: true                        # 使用里程计 Z 作为局部规划高度
+    fsm.thresh_replan: 1.0                      # 触发重新规划的距离阈值（米）
+    fsm.thresh_no_replan: 0.1                   # 接近当前轨迹时不重新规划的距离阈值（米）
+    fsm.planning_horizon: 7.5                   # 局部规划前视距离（米）
+    fsm.emergency_time: 1.0                     # 预计碰撞时间小于该值时进入紧急处理（秒）
+    fsm.fail_safe: true                         # 规划失败时是否启用安全保护
+    fsm.max_replan_fail_count: 8                # 连续重新规划失败的最大次数
+    fsm.enable_completion_driven_replan: false  # 避免持续重规划反复重置控制器轨迹
+    fsm.periodic_replan_interval: 0.75           # 周期重规划间隔（秒）
+    fsm.periodic_replan_min_remaining: 0.50      # 剩余时间过短时不再周期重规划（秒）
+
+    # 三维栅格地图尺寸及机器人碰撞体参数
+    grid_map.resolution: 0.05                    # 栅格分辨率（米/格）
+    grid_map.sliding_map_size_x: 10.0            # 滑动地图 X 方向总尺寸（米）
+    grid_map.sliding_map_size_y: 10.0            # 滑动地图 Y 方向总尺寸（米）
+    grid_map.sliding_map_size_z: 5.0             # 滑动地图 Z 方向总尺寸（米）
+    grid_map.local_update_range_x: 5.0           # 单次更新的 X 方向范围（米）
+    grid_map.local_update_range_y: 5.0           # 单次更新的 Y 方向范围（米）
+    grid_map.local_update_range_z: 2.5           # 单次更新的 Z 方向范围（米）
+    grid_map.map_sliding_en: true                # 是否让局部地图跟随机器人滑动
+    grid_map.map_sliding_thresh: 0.2             # 触发地图滑动的边界比例
+    grid_map.double_cylinder_radius: 0.3         # 机器人外接半径（米）；全局/局部共用
+    grid_map.double_cylinder_offset: 0.0         # 前后两个圆柱中心偏移量（米）
+    grid_map.body_height: 0.35                    # 机器人碰撞体高度（米）
+    grid_map.obstacles_inflation_z_up: 1.5        # 障碍物向上膨胀高度（米）
+    grid_map.obstacles_inflation_z_down: 0.5     # 障碍物向下膨胀高度（米）
+    grid_map.frame_id: odom                      # 栅格地图使用的全局坐标系
+    grid_map.sliding_map_frame_id: sliding_map   # 滑动局部地图坐标系名称
+    grid_map.ground_height: -1.1                   # 全局坐标系中的地面 Z 高度（米）
+    grid_map.ground_filter_height: 0.05            # 地面点过滤高度阈值（米）
+    grid_map.sensor_type: lidar                  # 输入传感器类型：lidar 或 depth
+    grid_map.cloud_is_world: true                # 点云是否已经位于全局坐标系
+    grid_map.need_extrinsic: false               # 是否在地图模块内应用传感器外参
+    grid_map.self_filter_radius: 0.35             # 剔除传感器附近的自车/车底反射点（米）
+    grid_map.cloud_skip_points: 16               # 约 2k 点/帧，保证 10Hz 点云下射线更新不积压
+    grid_map.occ_interval_ms: 125                 # 占据栅格更新周期（毫秒）
+    grid_map.vis_interval_ms: 1000                # 地图可视化周期（毫秒）
+
+    # 深度相机参数；sensor_type=lidar 时不使用
+    grid_map.cx: 321.04638671875                 # 相机主点 X 坐标（像素）
+    grid_map.cy: 243.44969177246094              # 相机主点 Y 坐标（像素）
+    grid_map.fx: 387.229248046875                # 相机 X 方向焦距（像素）
+    grid_map.fy: 387.229248046875                # 相机 Y 方向焦距（像素）
+    grid_map.depth_filter_maxdist: 3.0           # 深度数据最大有效距离（米）
+    grid_map.depth_filter_mindist: 0.3           # 深度数据最小有效距离（米）
+    grid_map.depth_filter_margin: 1              # 忽略图像边缘的像素宽度
+    grid_map.k_depth_scaling_factor: 1000.0      # 深度原始值到米的缩放系数
+    grid_map.skip_pixel: 2                       # 深度图采样步长；数值越大计算越快、点越稀疏
+
+    # 概率占据地图及可视化参数
+    grid_map.p_hit: 0.85                         # 一次命中后栅格为障碍物的概率
+    grid_map.p_miss: 0.30                        # 一次射线穿过后栅格为空闲的概率
+    grid_map.p_min: 0.12                         # 栅格占据概率下限
+    grid_map.p_max: 0.98                         # 栅格占据概率上限
+    grid_map.p_occ: 0.80                         # 判定栅格被占据的概率阈值
+    grid_map.max_ray_length: 5.0                 # 点云射线更新的最大长度（米）
+    grid_map.observation_timeout_s: 1.0         # 观测超时停止规划；障碍只由有效空闲射线清除
+    grid_map.vis_height: 0.3                     # 二维占据可视化的截取高度（米）
+    grid_map.show_occ_time: false                # 是否输出占据地图更新时间统计
+
+    # 轨迹管理器的运动约束
+    manager.max_vel: 0.35                        # 最大规划速度（米/秒）
+    manager.max_acc: 0.5                         # 最大规划加速度（米/秒²）
+    manager.max_jerk: 4.0                        # 最大加加速度（米/秒³）
+    manager.control_points_distance: 0.2         # B 样条控制点间距（米）
+    manager.planning_horizon: 7.5                # 轨迹管理器的规划范围（米）
+
+    # B 样条轨迹优化权重及约束
+    optimization.lambda_smooth: 1.0              # 轨迹平滑项权重
+    optimization.lambda_collision: 1.0           # 障碍物碰撞代价权重
+    optimization.lambda_feasibility: 0.1         # 动力学可行性代价权重
+    optimization.lambda_fitness: 1.0             # 轨迹贴合引导路径的权重
+    optimization.dist0: 0.2                      # 轨迹与障碍物的期望安全距离（米）
+    optimization.max_vel: 0.35                   # 优化器允许的最大速度（米/秒）
+    optimization.max_acc: 0.5                    # 优化器允许的最大加速度（米/秒²）
+    optimization.order: 3                        # B 样条阶数
+
+bxi_octo_global_planner:
+  ros__parameters:
+    # OctoMap 构建与全局路径搜索参数
+    output_bt: /tmp/bxi_octo_global_map.bt
+    cloud_scale: 1.0
+    octomap_resolution: 0.20
+    min_points_per_voxel: 2
+    min_cluster_voxels: 2
+    robot_radius: 0.3                            # 必须与 grid_map.double_cylinder_radius 一致
+    require_ground_support: true
+    strict_direct_ground_support: false
+    ground_support_xy_radius_cells: 1
+    ground_support_depth_cells: 1
+    snap_search_radius_cells: 1                # 约 0.2 m（octomap_resolution=0.20）
+    # RViz goals often land between sparse floor voxels; allow up to 0.8 m
+    # horizontal snapping while still rejecting distant/unsafe goals.
+    max_goal_snap_distance: 0.80
+    max_iterations: 1000000
+    enable_preblocked_costmap: true            # 自动预封锁栅格仅增加风险代价，不作为硬障碍
+    preblocked_costmap_radius_cells: 3
+    preblocked_costmap_weight: 1.0
+    enable_clearance_cost: true
+    clearance_cost_radius_cells: 4
+    clearance_cost_weight: 0.8
+    vertical_search_padding_below: 1.0
+    vertical_search_padding_above: 0.6
+    # 全局路径允许任意首步方向；控制器先原地转向，再沿路径前进。
+
+    # 地面吸附、可信轨迹与输出路径参数
+    start_z_offset: 0.0
+    goal_z_offset: 0.0
+    path_z_offset: 0.0
+    trusted_ground_enabled: true
+    trusted_ground_poses_file: ""
+    trusted_ground_z_offset: 0.0
+    trusted_ground_radius_m: 0.1
+    trusted_ground_max_segment_m: 0.75
+    ground_snap_xy_radius_m: 0.35
+    ground_snap_vertical_range_m: 2.0
+    enforce_path_ground_clearance: false
+    path_min_ground_clearance: 0.75
+    path_ground_search_depth: 1.50
+    path_ground_xy_radius_cells: 1
+
+    # RViz 可视化输出
+    debug_path_topic: /octo_global_path
+    ground_path_topic: /octo_ground_path
+    map_marker_topic: /octo_occupied_map
+    start_marker_topic: /octo_start_marker
+    goal_marker_topic: /octo_goal_marker
+    map_alpha: 0.72
+    publish_map: true
+    map_publish_period: 2.0
+    path_publish_period: 0.5
+
+base_link_odometry:
+  ros__parameters:
+    # Odin 到机器人 base_link 的安装标定
+    sensor_frame: imu
+    base_frame: base_link
+    mount_roll: 0.0
+    mount_pitch: 0.7853981633974483
+    mount_yaw: 0.0

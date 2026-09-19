@@ -60,7 +60,7 @@ else()
 endif()
 
 # Set library path
-set(LIB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lib")
+set(LIB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/odin_sdk/lib")
 message(STATUS "Library directory: ${LIB_DIR}")
 
 # Set library name based on platform
@@ -131,6 +131,8 @@ include_directories(
     ${yaml-cpp_INCLUDE_DIR}
     ${LIBUSB_INCLUDE_DIRS}
     ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/odin_sdk/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/cloud_processing/include
 )
 
 # Shared library list
@@ -182,7 +184,7 @@ if(ROS_VERSION STREQUAL "ROS1")
 
     catkin_package(
         CATKIN_DEPENDS roscpp std_msgs sensor_msgs nav_msgs cv_bridge image_transport message_runtime
-        INCLUDE_DIRS include
+        INCLUDE_DIRS include third_party/odin_sdk/include third_party/cloud_processing/include
     )
     
     # Set output directories
@@ -191,9 +193,9 @@ if(ROS_VERSION STREQUAL "ROS1")
     set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CATKIN_DEVEL_PREFIX}/lib)
     
     add_executable(host_sdk_sample 
-        src/host_sdk_sample.cpp
+        src/driver_node.cpp
         src/yaml_parser.cpp
-        src/rawCloudRender.cpp
+        third_party/cloud_processing/src/rawCloudRender.cpp
         src/camera_pose_visualization.cpp
     )
     target_link_libraries(host_sdk_sample
@@ -210,7 +212,7 @@ if(ROS_VERSION STREQUAL "ROS1")
     # is compiled (catkin's generate_messages produces this target).
     add_dependencies(host_sdk_sample ${PROJECT_NAME}_generate_messages_cpp)
 
-    add_library(pointcloud_depth_converter src/pointcloud_depth_converter.cpp)
+    add_library(pointcloud_depth_converter third_party/cloud_processing/src/pointcloud_depth_converter.cpp)
     target_link_libraries(pointcloud_depth_converter
     ${OpenCV_LIBS}
     ${PCL_LIBRARIES}
@@ -230,7 +232,7 @@ if(ROS_VERSION STREQUAL "ROS1")
     ${PCL_LIBRARIES}
     )
 
-    add_library(cloud_reprojector src/cloud_reprojector.cpp)
+    add_library(cloud_reprojector third_party/cloud_processing/src/cloud_reprojector.cpp)
     target_link_libraries(cloud_reprojector
     ${OpenCV_LIBS}
     ${PCL_LIBRARIES}
@@ -255,9 +257,9 @@ if(ROS_VERSION STREQUAL "ROS1")
         RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
     )
     
-    install(DIRECTORY include/
-        DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-        FILES_MATCHING PATTERN "*.h"
+    install(DIRECTORY include/ third_party/odin_sdk/include/ third_party/cloud_processing/include/
+        DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION}
+        FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp"
     )
     if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/config")
         install(DIRECTORY config/
@@ -302,9 +304,9 @@ elseif(ROS_VERSION STREQUAL "ROS2")
 
     # Create executable
     add_executable(host_sdk_sample 
-        src/host_sdk_sample.cpp
+        src/driver_node.cpp
         src/yaml_parser.cpp  
-        src/rawCloudRender.cpp
+        third_party/cloud_processing/src/rawCloudRender.cpp
         src/camera_pose_visualization.cpp
         )
     
@@ -337,7 +339,7 @@ elseif(ROS_VERSION STREQUAL "ROS2")
         ament_index_cpp
     )
     
-    add_library(pointcloud_depth_converter_ros2 src/pointcloud_depth_converter.cpp)
+    add_library(pointcloud_depth_converter_ros2 third_party/cloud_processing/src/pointcloud_depth_converter.cpp)
     target_link_libraries(pointcloud_depth_converter_ros2
         ${OpenCV_LIBS}
         ${PCL_LIBRARIES}
@@ -378,7 +380,7 @@ elseif(ROS_VERSION STREQUAL "ROS2")
         message_filters
     )
 
-    add_library(cloud_reprojector_ros2 src/cloud_reprojector.cpp)
+    add_library(cloud_reprojector_ros2 third_party/cloud_processing/src/cloud_reprojector.cpp)
     target_compile_definitions(cloud_reprojector_ros2 PRIVATE ROS2)
     target_link_libraries(cloud_reprojector_ros2
         ${OpenCV_LIBS}
@@ -443,7 +445,7 @@ elseif(ROS_VERSION STREQUAL "ROS2")
     )
     
     # Install headers
-    install(DIRECTORY include/
+    install(DIRECTORY include/ third_party/odin_sdk/include/ third_party/cloud_processing/include/
         DESTINATION include
     )
     # Install launch_ROS2 directory

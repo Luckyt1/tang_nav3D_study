@@ -1,0 +1,155 @@
+Panels:
+- Class: rviz_common/Displays
+  Name: Displays
+Visualization Manager:
+  Class: ''
+  Displays:
+  - Class: rviz_default_plugins/Grid
+    Name: Grid
+    Enabled: true
+    Cell Size: 1
+    Plane Cell Count: 20
+    Reference Frame: <Fixed Frame>
+    Value: true
+  - Class: rviz_default_plugins/PointCloud2
+    Name: Saved global map
+    Enabled: true
+    Alpha: 1
+    Color Transformer: AxisColor
+    Axis: Z
+    Position Transformer: XYZ
+    Style: Points
+    Size (Pixels): 3
+    Decay Time: 0
+    Topic:
+      Value: /relocalization/global_map
+      Depth: 1
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Transient Local
+    Value: true
+  - Class: rviz_default_plugins/PoseArray
+    Name: Candidate poses
+    Enabled: true
+    Color: 255; 100; 30
+    Topic:
+      Value: /relocalization/candidate_poses
+      Depth: 1
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Volatile
+    Value: true
+  - Class: rviz_default_plugins/Pose
+    Name: Tracked sensor pose
+    Enabled: true
+    Color: 40; 220; 100
+    Shape: Arrow
+    Topic:
+      Value: /relocalization/tracked_pose
+      Depth: 1
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Volatile
+    Value: true
+  - Class: rviz_default_plugins/PointCloud2
+    Name: ICP aligned query
+    Enabled: true
+    Alpha: 0.8
+    Color Transformer: FlatColor
+    Color: 40; 220; 100
+    Position Transformer: XYZ
+    Style: Points
+    Size (Pixels): 2
+    Decay Time: 0
+    Topic:
+      Value: /relocalization/aligned_cloud
+      Depth: 1
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Volatile
+    Value: true
+  - Class: rviz_default_plugins/Path
+    Name: Global path
+    Enabled: true
+    Color: 255; 200; 30
+    Line Style: Lines
+    Line Width: 0.04
+    Topic:
+      Value: /map/initial_path
+      Depth: 1
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Transient Local
+    Value: true
+  - Class: rviz_default_plugins/Path
+    Name: Local guide path
+    Enabled: true
+    Color: 30; 180; 255
+    Line Style: Lines
+    Line Width: 0.04
+    Topic:
+      Value: /initial_path
+      Depth: 1
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Transient Local
+    Value: true
+  - Class: rviz_default_plugins/Marker
+    Name: Local trajectory
+    Enabled: true
+    Namespaces: {}
+    Topic:
+      Value: /optimal_list
+      Depth: 20
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Transient Local
+    Value: true
+  - Class: rviz_default_plugins/Marker
+    Name: Local map bounds
+    Enabled: true
+    Namespaces: {}
+    Topic:
+      Value: /grid_map/sliding_map_bbox
+      Depth: 10
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Volatile
+    Value: true
+  - Class: rviz_default_plugins/PointCloud2
+    Name: Local obstacles
+    Enabled: true
+    Color Transformer: FlatColor
+    Color: 255; 70; 70
+    Position Transformer: XYZ
+    Style: Points
+    Size (Pixels): 3
+    Topic:
+      Value: /grid_map/occupancy_inflate
+      Depth: 1
+      History Policy: Keep Last
+      Reliability Policy: Best Effort
+      Durability Policy: Volatile
+    Value: true
+  Enabled: true
+  Global Options:
+    Background Color: 35; 35; 35
+    Fixed Frame: map
+    Frame Rate: 30
+  Name: root
+  Tools:
+  - Class: rviz_default_plugins/Interact
+  - Class: rviz_default_plugins/MoveCamera
+  - Class: rviz_default_plugins/Select
+  - Class: rviz_default_plugins/SetGoal
+    Topic: /goal_pose
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Distance: 15
+      Pitch: 0.65
+      Yaw: 0.8
+      Target Frame: <Fixed Frame>
+Window Geometry:
+  Width: 1280
+  Height: 800

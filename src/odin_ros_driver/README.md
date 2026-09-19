@@ -188,35 +188,36 @@ The following topics are published in the odom frame: `/odin1/cloud_slam, /odin1
 
 ## 4. File structure and data format
 ### 4.1 File structure
+
+The executable name remains `host_sdk_sample`. Its `main()` and device/ROS
+lifecycle implementation are together in `src/driver_node.cpp`; SDK binaries
+and point-cloud algorithms are under `third_party`. The original initialization,
+shutdown sequence and calibrated configuration are retained.
+
 ```shell
 Odin_ROS_Driver/                // ROS1/ROS2 driver package
-    3rdparty/                   // Third-party libraries
+    third_party/
+        odin_sdk/
+            lib/                // Original AMD/ARM static SDK libraries
+            include/            // lidar_api.h / lidar_api_type.h
+        cloud_processing/
+            src/                // Depth conversion, reprojection, RGB rendering
+            include/            // Algorithm headers and polynomial camera model
     src/
-        host_sdk_sample.cpp     // Example source code
+        driver_node.cpp         // main and device/ROS lifecycle
         yaml_parser.cpp         // Source code for reading yaml parameters
-        rawCloudRender.cpp      // Source code for RenderCloud
         depth_image_ros_node.cpp //depth_image_ros_node
         depth_image_ros2_node.cpp //depth_image_ros2_node
         pcd2depth_ros.cpp       //Source code for pcd2depth_ros
         pcd2depth_ros2.cpp      //Source code for pcd2depth_ros2
-        pointcloud_depth_converter.cpp //Source code for pointcloud_depth_converter
         cloud_reprojection_ros.cpp //Source code for cloud reprojection node (ROS1/ROS2)
-        cloud_reprojector.cpp   //Core logic for cloud reprojection
-    lib/
-        liblydHostApi_amd.a     // Static library for AMD platform
-        liblydHostApi_arm.a     // Static library for ARM platform
     include/
         host_sdk_sample.h       // Example header file
-        lidar_api_type.h        // API data structure header file
-        lidar_api.h             // API function declarations
         yaml_parser.h           // Parameter file reading header file
-        rawCloudRender.h        // API about RenderCloud
         data_logger.h           // LOG about save_data
         depth_image_ros_node.hpp // depth_image_ros_node
         depth_image_ros2_node.hpp // depth_image_ros2_node
-        pointcloud_depth_converter.hpp // pointcloud_depth_convert
         cloud_reprojection_ros_node.hpp // cloud_reprojection_ros_node (ROS1/ROS2)
-        cloud_reprojector.hpp   // Core class for cloud reprojection
     config/
         control_command.yaml    // Control parameter file for driver
         calib.yaml              // Machine calibration yaml，differ for each individual device. Retrieved from the device everytime it connects to ROS driver
