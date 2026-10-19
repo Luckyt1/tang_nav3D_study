@@ -30,7 +30,7 @@ Visualization Manager:
       Value: true
     - Class: rviz_default_plugins/PoseArray
       Name: Candidate poses
-      Enabled: true
+      Enabled: false
       Color: 255; 100; 30
       Topic:
         Value: /relocalization/candidate_poses
@@ -38,7 +38,7 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Durability Policy: Volatile
-      Value: true
+      Value: false
     - Class: rviz_default_plugins/Pose
       Name: Tracked sensor pose
       Enabled: true
@@ -53,7 +53,7 @@ Visualization Manager:
       Value: true
     - Class: rviz_default_plugins/PointCloud2
       Name: ICP aligned query
-      Enabled: true
+      Enabled: false
       Alpha: 0.8
       Color Transformer: FlatColor
       Color: 40; 220; 100
@@ -67,12 +67,12 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Durability Policy: Volatile
-      Value: true
+      Value: false
   Enabled: true
   Global Options:
     Background Color: 35; 35; 35
     Fixed Frame: map
-    Frame Rate: 30
+    Frame Rate: 10
   Name: root
   Tools:
     - Class: rviz_default_plugins/Interact

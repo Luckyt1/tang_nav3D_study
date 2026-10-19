@@ -19,6 +19,8 @@ struct FineConfig {
   double max_rmse{0.15};
   double max_translation_correction{1.0};
   double max_rotation_correction{0.5235987755982988};  // radians: 30 degrees
+  // Limit map->odom tilt only when both frames are known to be gravity aligned.
+  double max_gravity_angle{3.14159265358979323846};  // radians: 180 degrees disables the gate
 };
 
 struct FineResult {

@@ -28,6 +28,14 @@ bool rigid(const Eigen::Matrix4d& matrix, double tolerance = 1e-6) {
          std::abs(rotation.determinant() - 1.0) <= tolerance;
 }
 
+bool gravityConsistent(const Eigen::Isometry3d& map_from_query,
+                       const Eigen::Isometry3d& odom_from_query, double max_angle) {
+  const Eigen::Matrix3d map_from_odom =
+    map_from_query.linear() * odom_from_query.linear().transpose();
+  const double cosine = std::clamp(map_from_odom(2, 2), -1.0, 1.0);
+  return std::acos(cosine) <= max_angle;
+}
+
 Cloud::Ptr downsample(const Cloud& cloud, double voxel_size) {
   for (const auto& point : cloud) {
     require(point.getVector3fMap().allFinite(), "fine registration cloud must be finite");
@@ -134,6 +142,10 @@ FineResult refineCandidate(const Cloud::ConstPtr& source, const Cloud::ConstPtr&
       result.failure_reason = "invalid_pose_composition";
       return result;
     }
+    if (!gravityConsistent(map_from_query, odom_from_query, config.max_gravity_angle)) {
+      result.failure_reason = "gravity_inconsistent";
+      return result;
+    }
     result.success = true;
     result.submap_from_query = submap_from_query;
     result.map_from_query = map_from_query;
@@ -165,6 +177,8 @@ FineRegistration::FineRegistration(const MapDatabase& database, const FineConfig
           "FineConfig.max_translation_correction must be finite and positive");
   require(positive(config.max_rotation_correction) && config.max_rotation_correction <= std::acos(-1.0),
           "FineConfig.max_rotation_correction must be in (0, pi]");
+  require(positive(config.max_gravity_angle) && config.max_gravity_angle <= std::acos(-1.0),
+          "FineConfig.max_gravity_angle must be in (0, pi]");
 }
 
 FineResult FineRegistration::refine(const QueryResult& query) {
@@ -186,12 +200,20 @@ FineResult FineRegistration::refine(const QueryResult& query) {
     const auto& candidate = query.candidates[i];
     require(rigid(candidate.submap_from_query.matrix()), "BTC submap_from_query must be a finite rigid pose");
     require(rigid(candidate.map_from_query.matrix()), "BTC map_from_query must be a finite rigid pose");
-    auto found = targets_.find(candidate.submap_id);
-    if (found == targets_.end()) {
-      found = targets_.emplace(candidate.submap_id,
-        downsample(database_.loadSubmap(candidate.submap_id), config_.voxel_size)).first;
+    FineResult attempt;
+    if (!gravityConsistent(candidate.map_from_query, query.odom_from_query,
+                           config_.max_gravity_angle)) {
+      attempt.submap_id = candidate.submap_id;
+      attempt.query_points = source->size();
+      attempt.failure_reason = "gravity_inconsistent";
+    } else {
+      auto found = targets_.find(candidate.submap_id);
+      if (found == targets_.end()) {
+        found = targets_.emplace(candidate.submap_id,
+          downsample(database_.loadSubmap(candidate.submap_id), config_.voxel_size)).first;
+      }
+      attempt = refineCandidate(source, found->second, candidate, query.odom_from_query, config_);
     }
-    const auto attempt = refineCandidate(source, found->second, candidate, query.odom_from_query, config_);
     if (i == 0 || (attempt.success && !best.success) ||
         (attempt.success == best.success &&
          (attempt.overlap > best.overlap ||

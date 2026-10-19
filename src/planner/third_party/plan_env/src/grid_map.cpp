@@ -1,7 +1,9 @@
 #include "plan_env/grid_map.h"
 #include <cmath>
 #include <limits>
+#include <stdexcept>
 #include <string>
+#include <vector>
 #include <geometry_msgs/msg/transform_stamped.hpp>
 
 namespace
@@ -12,6 +14,51 @@ void load_parameter(rclcpp::Node *node, const std::string &name, T &value, const
   if (!node->has_parameter(name))
     node->declare_parameter<T>(name, default_value);
   node->get_parameter(name, value);
+}
+
+bool finiteVector(const std::vector<double> &values)
+{
+  for (const double value : values)
+  {
+    if (!std::isfinite(value))
+      return false;
+  }
+  return true;
+}
+
+bool validRotation(const Eigen::Matrix3d &rotation)
+{
+  const Eigen::Matrix3d should_be_identity = rotation.transpose() * rotation;
+  return std::isfinite(rotation.determinant()) &&
+         std::abs(rotation.determinant() - 1.0) < 1e-3 &&
+         (should_be_identity - Eigen::Matrix3d::Identity()).norm() < 1e-3;
+}
+
+void loadLidarExtrinsic(rclcpp::Node *node, Eigen::Matrix4d &extrinsic)
+{
+  std::vector<double> translation = {
+    extrinsic(0, 3), extrinsic(1, 3), extrinsic(2, 3)};
+  std::vector<double> rotation = {
+    extrinsic(0, 0), extrinsic(0, 1), extrinsic(0, 2),
+    extrinsic(1, 0), extrinsic(1, 1), extrinsic(1, 2),
+    extrinsic(2, 0), extrinsic(2, 1), extrinsic(2, 2)};
+  load_parameter(node, "grid_map.lidar_extrinsic_translation", translation, translation);
+  load_parameter(node, "grid_map.lidar_extrinsic_rotation", rotation, rotation);
+  if (translation.size() != 3 || !finiteVector(translation))
+    throw std::invalid_argument("grid_map.lidar_extrinsic_translation must contain 3 finite values");
+  if (rotation.size() != 9 || !finiteVector(rotation))
+    throw std::invalid_argument("grid_map.lidar_extrinsic_rotation must contain 9 finite values");
+
+  Eigen::Matrix3d rotation_matrix;
+  rotation_matrix << rotation[0], rotation[1], rotation[2],
+                     rotation[3], rotation[4], rotation[5],
+                     rotation[6], rotation[7], rotation[8];
+  if (!validRotation(rotation_matrix))
+    throw std::invalid_argument("grid_map.lidar_extrinsic_rotation must be an orthonormal rotation matrix");
+
+  extrinsic.block<3, 3>(0, 0) = rotation_matrix;
+  extrinsic.block<3, 1>(0, 3) =
+      Eigen::Vector3d(translation[0], translation[1], translation[2]);
 }
 }  // namespace
 
@@ -85,6 +132,7 @@ void GridMap::initMap(rclcpp::Node *node)
       0.0, 1.0, 0.0, -0.02329,
       0.0, 0.0, 1.0,  0.04412,
       0.0, 0.0, 0.0,  1.00000;
+  loadLidarExtrinsic(node_, mp_.lidar_extrinsic_);
 
   mp_.depth_extrinsic_ <<
       0.0,  0.707107, 0.707107, -0.15170,

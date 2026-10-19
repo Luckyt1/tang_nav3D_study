@@ -31,6 +31,27 @@
 
 namespace
 {
+void declareGridInitParameters(const std::shared_ptr<rclcpp::Node>& node)
+{
+  node->declare_parameter("grid_map.resolution", 0.1);
+  node->declare_parameter("grid_map.sliding_map_size_x", 2.0);
+  node->declare_parameter("grid_map.sliding_map_size_y", 2.0);
+  node->declare_parameter("grid_map.sliding_map_size_z", 2.0);
+  node->declare_parameter("grid_map.obstacles_inflation_z_up", 0.1);
+  node->declare_parameter("grid_map.obstacles_inflation_z_down", 0.1);
+  node->declare_parameter("grid_map.double_cylinder_radius", 0.2);
+  node->declare_parameter("grid_map.map_sliding_en", false);
+  node->declare_parameter("grid_map.p_hit", 0.85);
+  node->declare_parameter("grid_map.p_miss", 0.30);
+  node->declare_parameter("grid_map.p_min", 0.12);
+  node->declare_parameter("grid_map.p_max", 0.98);
+  node->declare_parameter("grid_map.p_occ", 0.80);
+  node->declare_parameter("grid_map.max_ray_length", 1.0);
+  node->declare_parameter("grid_map.ground_height", -1.0);
+  node->declare_parameter("grid_map.occ_interval_ms", 10000);
+  node->declare_parameter("grid_map.vis_interval_ms", 10000);
+}
+
 GridMap makeSlidingMap()
 {
   GridMap map;
@@ -75,6 +96,45 @@ int inflationCount(GridMap& map, const Eigen::Vector3d& pos)
   return map.md_.occupancy_buffer_inflate_cnt_[map.toAddress(id)];
 }
 }  // namespace
+
+TEST(GridMapLidarExtrinsic, UsesDefaultAndParameterOverride)
+{
+  rclcpp::init(0, nullptr);
+  auto node = std::make_shared<rclcpp::Node>("grid_map_lidar_extrinsic_test");
+  declareGridInitParameters(node);
+  node->declare_parameter("grid_map.lidar_extrinsic_translation",
+                          std::vector<double>{0.1, -0.2, 0.3});
+  node->declare_parameter("grid_map.lidar_extrinsic_rotation",
+                          std::vector<double>{0.0, -1.0, 0.0,
+                                              1.0, 0.0, 0.0,
+                                              0.0, 0.0, 1.0});
+
+  GridMap map;
+  map.initMap(node.get());
+  EXPECT_DOUBLE_EQ(map.mp_.lidar_extrinsic_(0, 3), 0.1);
+  EXPECT_DOUBLE_EQ(map.mp_.lidar_extrinsic_(1, 3), -0.2);
+  EXPECT_DOUBLE_EQ(map.mp_.lidar_extrinsic_(2, 3), 0.3);
+  EXPECT_DOUBLE_EQ(map.mp_.lidar_extrinsic_(0, 1), -1.0);
+  EXPECT_DOUBLE_EQ(map.mp_.lidar_extrinsic_(1, 0), 1.0);
+
+  rclcpp::shutdown();
+}
+
+TEST(GridMapLidarExtrinsic, RejectsInvalidRotation)
+{
+  rclcpp::init(0, nullptr);
+  auto node = std::make_shared<rclcpp::Node>("grid_map_bad_lidar_extrinsic_test");
+  declareGridInitParameters(node);
+  node->declare_parameter("grid_map.lidar_extrinsic_rotation",
+                          std::vector<double>{1.0, 0.0, 0.0,
+                                              0.0, 2.0, 0.0,
+                                              0.0, 0.0, 1.0});
+
+  GridMap map;
+  EXPECT_THROW(map.initMap(node.get()), std::invalid_argument);
+
+  rclcpp::shutdown();
+}
 
 TEST(GridMapSlidingInflation, KeepsInflationAcrossPositiveXSlide)
 {

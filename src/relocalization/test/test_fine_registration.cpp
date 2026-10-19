@@ -209,6 +209,72 @@ TEST_F(FineRegistrationTest, RejectsMissingCandidates) {
   EXPECT_FALSE(result.failure_reason.empty());
 }
 
+TEST_F(FineRegistrationTest, GravityGateIsDisabledByDefault) {
+  auto query = makeQuery(false);
+  const auto inverted_map_from_odom = pose(Eigen::Vector3d::Zero(), 0.0, 0.0, 180.0);
+  query.odom_from_query =
+    inverted_map_from_odom.inverse() * query.candidates.front().map_from_query;
+
+  const auto result = FineRegistration(*database, config).refine(query);
+
+  ASSERT_TRUE(result.success) << result.failure_reason;
+  EXPECT_LT(rotationError(result.map_from_odom, inverted_map_from_odom), 0.01);
+}
+
+TEST_F(FineRegistrationTest, GravityGateRejectsInvertedCandidateBeforeLoadingTarget) {
+  auto query = makeQuery(false);
+  const auto inverted_map_from_odom = pose(Eigen::Vector3d::Zero(), 0.0, 0.0, 177.0);
+  query.odom_from_query =
+    inverted_map_from_odom.inverse() * query.candidates.front().map_from_query;
+  // This target does not exist: a gravity rejection must not even load it for ICP.
+  query.candidates.front().submap_id = 999;
+  config.max_gravity_angle = 30.0 * M_PI / 180.0;
+
+  const auto result = FineRegistration(*database, config).refine(query);
+
+  EXPECT_FALSE(result.success);
+  EXPECT_FALSE(result.converged);
+  EXPECT_EQ(result.submap_id, 999U);
+  EXPECT_EQ(result.target_points, 0U);
+  EXPECT_EQ(result.failure_reason, "gravity_inconsistent");
+}
+
+TEST_F(FineRegistrationTest, GravityGateAllowsYawAndAnInvertedSensor) {
+  auto query = makeQuery(false);
+  const auto inverted_submap_from_query =
+    pose(Eigen::Vector3d(0.3, -0.4, 0.6), -18.0, 2.0, 180.0);
+  const auto expected_map_from_odom = pose(Eigen::Vector3d(2.0, -4.0, 0.5), 125.0, 2.0, -3.0);
+  query.query_cloud = transformCloud(scene, inverted_submap_from_query.inverse());
+  query.candidates.front().submap_from_query = inverted_submap_from_query;
+  query.candidates.front().map_from_query = map_from_submap * inverted_submap_from_query;
+  query.odom_from_query =
+    expected_map_from_odom.inverse() * query.candidates.front().map_from_query;
+  config.max_gravity_angle = 30.0 * M_PI / 180.0;
+
+  const auto result = FineRegistration(*database, config).refine(query);
+
+  ASSERT_TRUE(result.success) << result.failure_reason;
+  EXPECT_LT(rotationError(result.map_from_odom, expected_map_from_odom), 0.01);
+  EXPECT_LT(translationError(result.map_from_odom, expected_map_from_odom), 0.015);
+}
+
+TEST_F(FineRegistrationTest, GravityGateAlsoChecksTheRefinedPose) {
+  auto query = makeQuery();
+  // Coarse map->odom is identity, but removing its perturbation tilts map->odom.
+  query.odom_from_query = query.candidates.front().map_from_query;
+  const auto baseline = FineRegistration(*database, config).refine(query);
+  ASSERT_TRUE(baseline.success) << baseline.failure_reason;
+  config.max_gravity_angle = 0.2 * M_PI / 180.0;
+
+  const auto result = FineRegistration(*database, config).refine(query);
+
+  EXPECT_FALSE(result.success);
+  EXPECT_TRUE(result.converged);
+  EXPECT_GE(result.overlap, config.min_overlap);
+  EXPECT_LE(result.rmse, config.max_rmse);
+  EXPECT_EQ(result.failure_reason, "gravity_inconsistent");
+}
+
 TEST_F(FineRegistrationTest, RejectsSparseQuery) {
   auto query = makeQuery();
   query.query_cloud.resize(5);
@@ -325,6 +391,15 @@ TEST_F(FineRegistrationTest, RejectsInvalidConfiguration) {
   add("negative RMSE", [](auto& value) { value.max_rmse = -0.1; });
   add("negative translation", [](auto& value) { value.max_translation_correction = -0.1; });
   add("negative rotation", [](auto& value) { value.max_rotation_correction = -0.1; });
+  add("zero gravity angle", [](auto& value) { value.max_gravity_angle = 0.0; });
+  add("negative gravity angle", [](auto& value) { value.max_gravity_angle = -0.1; });
+  add("excessive gravity angle", [](auto& value) { value.max_gravity_angle = M_PI + 0.01; });
+  add("NaN gravity angle", [](auto& value) {
+    value.max_gravity_angle = std::numeric_limits<double>::quiet_NaN();
+  });
+  add("infinite gravity angle", [](auto& value) {
+    value.max_gravity_angle = std::numeric_limits<double>::infinity();
+  });
   add("NaN overlap", [](auto& value) {
     value.min_overlap = std::numeric_limits<double>::quiet_NaN();
   });

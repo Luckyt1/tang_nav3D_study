@@ -67,6 +67,13 @@ btc/*.btc
 7. ICP 使用 `submap_from_query` 初值。达到迭代上限而未收敛会被拒绝；随后用最近邻距离独立计算内点数、重叠率和 RMSE，并检查相对粗位姿的修正幅度。从通过检查的候选中优先选择重叠率最高、其次 RMSE 最低的一个。
 8. 点云匹配和跟踪定时器使用独立的互斥回调组，由两个执行线程处理，耗时的 BTC/ICP 不占用跟踪回调线程。定时器默认以 50 Hz 读取最新 `odom -> lidar` TF；仅当里程计时间戳前进且修正仍有效时，发布 `map -> odom` 和 `tracked_pose`。不为重复的旧里程计数据换上新时间戳。
 
+当建图和实时里程计都使用重力竖直的世界坐标系时，可设置
+`fine.max_gravity_angle_deg:=30.0`，在加载目标子图和运行 ICP 前排除上下颠倒等候选，
+并在接受最终配准前再次检查。它检查的是 `map -> odom` 的 Z 轴夹角，兼容倒装雷达和任意航向；
+失败原因是 `gravity_inconsistent`。菜单脚本和导航 launch 的 MID360S / Point-LIO 后端
+默认启用 30°，模块自身默认 180°（不限制）。该约束只减少无效匹配计算，不保证剩余候选正确；
+不适用于地图与实时 odom 的竖直方向定义不同的情况。
+
 动态 `/tf` 使用 `best_effort` 订阅，保留 100 条接收队列和 TF 历史，避免旧消息丢失后的可靠重传等待阻塞后续位姿。`/tf_static` 仍使用 `reliable + transient_local`，确保后启动的节点能收到静态外参。丢帧时仍严格按点云时间戳查询 TF；等待超时会跳过该帧，不以当前位姿替代历史位姿。里程计真正停更时仍触发超时保护。
 
 因此查询结果频率低于输入点云频率；10 Hz 输入、每 10 帧查询时，理想查询频率约 1 Hz，实际还受特征提取与检索耗时影响。`accumulated_frames` 表示本轮新增有效帧数，点云可以包含之前的局部历史。特征不足或没有匹配时也会发布空候选结果，不会沿用旧候选。动态滤除需要多次观测，不保证消除所有行人点。
@@ -187,6 +194,7 @@ ros2 topic echo /relocalization/global_map sensor_msgs/msg/PointCloud2 \
 | `fine.min_overlap` / `fine.max_rmse` | `0.6` / `0.15` | 最少内点比例 / 内点 RMSE 上限（米） |
 | `fine.max_translation_correction` | `1.0` | 相对粗位姿允许修正的最大平移距离，米 |
 | `fine.max_rotation_correction_deg` | `30.0` | 相对粗位姿允许修正的最大旋转角，度 |
+| `fine.max_gravity_angle_deg` | `180.0` | `map -> odom` 的 Z 轴夹角上限，范围 `(0, 180]`；180 不限制，MID360S 启动入口设置为 30 |
 | `tracking.publish_rate` | `50.0` | 跟踪 TF/位姿最大发布频率，Hz；里程计不更新时不重复发布 |
 | `tracking.fix_timeout` | `5.0` | 最近精定位结果的有效期，秒 |
 | `tracking.odom_timeout` | `1.0` | 里程计时间戳允许停止前进的最长时间，秒 |

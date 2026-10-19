@@ -47,7 +47,11 @@ source install/setup.bash
 ./start_mapping.sh
 ```
 
-选择 **3）导航预览**，选择已保存的 BTC 地图。脚本启动里程计、现有 BTC/ICP 定位、全局规划、局部规划和 RViz。定位有效后，用 RViz 的 **2D Goal Pose** 在地图中指定目标；黄色为全局路径，蓝色为局部引导路径，Marker 显示优化轨迹。该入口默认不启动速度控制器。
+选择 **3）导航预览**，再选择传感器和已保存的 BTC 地图。脚本启动里程计、现有 BTC/ICP 定位、全局规划、局部规划和 RViz。定位有效后，用 RViz 的 **2D Goal Pose** 在地图中指定目标；黄色为全局路径，蓝色为局部引导路径，Marker 显示优化轨迹。该入口默认不启动速度控制器。
+
+MID360S 可用 `colcon build --packages-up-to point_lio planner --executor sequential`
+构建，然后运行 `SENSOR_BACKEND=mid360 ./start_mapping.sh`。网络和安装配置入口见
+[工作空间说明](../../README.md#mid360s--point-lio-可选数据源)。
 
 规划使用 `static_map.pcd`，定位使用同一快照的 BTC 数据；不用设备内置的 BIN 重定位地图。单独接入已运行的里程计和定位时：
 
@@ -57,6 +61,19 @@ ros2 launch planner navigation.launch.py \
 ```
 
 `navigation.launch.py` 不启动雷达驱动。`start_relocalization` 默认 true，`start_rviz` 默认 true，`start_controller` 默认 false。`odin_scan_planner.launch.py` 是此入口的别名，参数也使用 `map_directory`。
+
+RViz 默认以 10 Hz 刷新，保留地图、跟踪位姿、路径和轨迹；候选位姿、ICP 对齐云、
+局部地图边界及障碍点云默认关闭，可在 Displays 中手动开启。
+菜单脚本支持 `START_RVIZ=0`，关闭 RViz 时也跳过其依赖检查和日志窗口；
+直接使用 launch 时对应 `start_rviz:=false`。
+
+新增 `sensor_backend:=odin|mid360`（默认 Odin）。`mid360` 保留为 Livox 系列后端标识，
+当前驱动默认读取 `MID360s_config.json`，适配 MID360S。里程计由独立的
+`mid360_odometry.launch.py` 启动，它一起运行 Livox 驱动、Point-LIO 和雷达外参 TF。
+MID360S 后端同时设置 `fine.max_gravity_angle_deg:=30.0`，在 ICP 前排除地图与实时 odom
+竖直方向明显不一致的候选；要求两者均采用重力竖直的世界坐标系，允许雷达倒装及任意航向。
+两个 launch 都接受 `point_lio_config`，里程计 launch 还接受 `livox_config`；
+使用自定义标定时两个入口应传相同的 Point-LIO YAML。
 
 ROS 包名现在是 `planner`。原 `scan_planner_msgs/msg/Bspline` 与
 `scan_planner_msgs/msg/DataDisp` 已合并为 `planner/msg/Bspline` 和
@@ -76,7 +93,7 @@ ROS 包名现在是 `planner`。原 `scan_planner_msgs/msg/Bspline` 与
 
 ## 坐标与定位有效期
 
-`/odin1/cloud_slam` 保持 `odom` 坐标；局部栅格、引导路径和 B 样条均在 `odom`。RViz 目标与静态地图在 `map`：
+Odin 的 `/odin1/cloud_slam` 或 MID360 的 `/cloud_registered` 保持 `odom` 坐标；局部栅格、引导路径和 B 样条均在 `odom`。RViz 目标与静态地图在 `map`：
 
 ```text
 /goal_pose (map)
@@ -93,6 +110,11 @@ ROS 包名现在是 `planner`。原 `scan_planner_msgs/msg/Bspline` 与
 ## 机器人参数
 
 沿用用户在 `3D_nav` 中已调好的参数：`robot_radius=0.3`、`body_height=0.35`、`ground_height=-1.1`，安装俯仰角 `mount_pitch=0.7853981633974483`（45°），roll/yaw 均为 0。地面高度是 **odom 系中的 Z**，安装角单位为弧度。规划与控制器 YAML 参数与来源保持一致。
+
+上述安装角是 Odin 默认值。`sensor_backend:=mid360` 时自动选择
+`mount_roll=π, mount_pitch=0, mount_yaw=0`，与当前 MID360 倒装配置一致。
+MID360 的雷达相对 IMU 外参从 Point-LIO YAML 读取，同时用于 TF 和局部地图射线起点；
+固定世界坐标为 `odom`，原始里程计坐标为 `body_raw`。
 
 菜单入口可通过 `ROBOT_RADIUS`、`BODY_HEIGHT`、`GROUND_HEIGHT`、`MOUNT_ROLL`、`MOUNT_PITCH`、`MOUNT_YAW` 环境变量覆盖。直接 launch 使用同名小写参数。控制增益、横向速度能力等在 `config/controllers.yaml`；轮式差速底盘应将 `max_vy` 设为 0。需要实际速度输出时，显式设置 `start_controller:=true`，并指定底盘接收的 `cmd_vel_topic`。
 

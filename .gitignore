@@ -9,7 +9,20 @@ __pycache__/
 /install
 /log
 /maps
-/start_odometry.sh
 /tools
 *.bin
 src/odin_ros_driver/src/odin_ros_driver/map/
+
+# Local runtime, build and agent files (all packages)
+build/
+install/
+log/
+logs/
+recorddata/
+.cache/
+.pytest_cache/
+/.agents/
+/.codex/
+/.aws/
+/src/odin_ros_driver/src/odin_ros_driver/
+/src/odin_ros_driver/image/cam_in_ex.txt

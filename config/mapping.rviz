@@ -30,7 +30,7 @@ Visualization Manager:
       Value: true
     - Class: rviz_default_plugins/PoseArray
       Name: Submap poses
-      Enabled: true
+      Enabled: false
       Color: 255; 100; 30
       Topic:
         Value: /map/submap_poses
@@ -38,16 +38,16 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Durability Policy: Transient Local
-      Value: true
+      Value: false
     - Class: rviz_default_plugins/TF
       Name: TF
-      Enabled: true
-      Value: true
+      Enabled: false
+      Value: false
   Enabled: true
   Global Options:
     Background Color: 35; 35; 35
     Fixed Frame: odom
-    Frame Rate: 30
+    Frame Rate: 10
   Name: root
   Tools:
     - Class: rviz_default_plugins/Interact

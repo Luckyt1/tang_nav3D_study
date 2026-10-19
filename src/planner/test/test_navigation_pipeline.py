@@ -6,6 +6,7 @@ import signal
 import subprocess
 import time
 
+import pytest
 import rclpy
 from geometry_msgs.msg import PoseStamped, TransformStamped
 from nav_msgs.msg import Odometry, Path
@@ -18,7 +19,37 @@ from std_msgs.msg import Bool, Header
 from tf2_msgs.msg import TFMessage
 
 
-def test_preview_pipeline_produces_paths_and_cancels_on_localization_loss(tmp_path):
+def write_mid360_config(tmp_path):
+    path = tmp_path / 'mid360.yaml'
+    path.write_text(
+        """
+/**:
+  ros__parameters:
+    common:
+      lid_topic: livox/lidar
+      imu_topic: livox/imu
+    mapping:
+      extrinsic_est_en: false
+      extrinsic_T: [ -0.011, -0.02329, 0.04412 ]
+      extrinsic_R: [ 1.0, 0.0, 0.0,
+                     0.0, 1.0, 0.0,
+                     0.0, 0.0, 1.0 ]
+    odometry:
+      publish_odometry_without_downsample: false
+    publish:
+      scan_publish_en: true
+      tf_send_en: true
+      world_frame: odom
+      body_frame: body_raw
+    pcd_save:
+      pcd_save_en: false
+""",
+        encoding='utf-8')
+    return path
+
+
+@pytest.mark.parametrize('sensor_backend', ['odin', 'mid360'])
+def test_preview_pipeline_produces_paths_and_cancels_on_localization_loss(tmp_path, sensor_backend):
     os.environ['ROS_DOMAIN_ID'] = str(210 + os.getpid() % 15)
     os.environ['ROS_LOCALHOST_ONLY'] = '1'
     os.environ['ROS_LOG_DIR'] = str(tmp_path / 'ros_log')
@@ -37,8 +68,10 @@ def test_preview_pipeline_produces_paths_and_cancels_on_localization_loss(tmp_pa
     dynamic_qos = QoSProfile(depth=100, reliability=ReliabilityPolicy.BEST_EFFORT)
     latched = QoSProfile(depth=1, reliability=ReliabilityPolicy.RELIABLE,
                          durability=DurabilityPolicy.TRANSIENT_LOCAL)
-    odom_pub = node.create_publisher(Odometry, '/odin1/odometry', qos_profile_sensor_data)
-    cloud_pub = node.create_publisher(PointCloud2, '/odin1/cloud_slam', qos_profile_sensor_data)
+    odom_topic = '/aft_mapped_to_init' if sensor_backend == 'mid360' else '/odin1/odometry'
+    cloud_topic = '/cloud_registered' if sensor_backend == 'mid360' else '/odin1/cloud_slam'
+    odom_pub = node.create_publisher(Odometry, odom_topic, qos_profile_sensor_data)
+    cloud_pub = node.create_publisher(PointCloud2, cloud_topic, qos_profile_sensor_data)
     tf_pub = node.create_publisher(TFMessage, '/tf', dynamic_qos)
     status_pub = node.create_publisher(TrackingStatus, '/relocalization/tracking_status', 1)
     goal_pub = node.create_publisher(PoseStamped, '/goal_pose', 10)
@@ -49,10 +82,15 @@ def test_preview_pipeline_produces_paths_and_cancels_on_localization_loss(tmp_pa
     node.create_subscription(Bool, '/navigation/enabled', enabled.append, qos_profile_sensor_data)
     log_path = tmp_path / 'navigation.log'
     with log_path.open('w') as log:
-        process = subprocess.Popen([
+        launch_command = [
             'ros2', 'launch', 'planner', 'navigation.launch.py',
             f'map_directory:={snapshot}', 'start_relocalization:=false', 'start_rviz:=false',
-        ], stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
+            f'sensor_backend:={sensor_backend}',
+        ]
+        if sensor_backend == 'mid360':
+            launch_command.append(f'point_lio_config:={write_mid360_config(tmp_path)}')
+        process = subprocess.Popen(
+            launch_command, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
         try:
             def pump(duration, valid=True, send_goal=False, done=lambda: False):
                 deadline = time.monotonic() + duration
@@ -64,11 +102,18 @@ def test_preview_pipeline_produces_paths_and_cancels_on_localization_loss(tmp_pa
                     if now >= next_sample:
                         odom = Odometry()
                         odom.header = Header(stamp=stamp, frame_id='odom')
-                        odom.child_frame_id = 'imu'
-                        # The tuned mounting pitch is +45 degrees; the corrected
-                        # base remains level. Cloud points are already in odom.
-                        odom.pose.pose.orientation.y = math.sin(math.pi / 8.)
-                        odom.pose.pose.orientation.w = math.cos(math.pi / 8.)
+                        if sensor_backend == 'mid360':
+                            odom.child_frame_id = 'body_raw'
+                            # MID360 is mounted upside down. The corrected base
+                            # remains level after the launch default roll=pi.
+                            odom.pose.pose.orientation.x = math.sin(math.pi / 2.)
+                            odom.pose.pose.orientation.w = math.cos(math.pi / 2.)
+                        else:
+                            odom.child_frame_id = 'imu'
+                            # The tuned Odin mounting pitch is +45 degrees; the
+                            # corrected base remains level. Cloud points are already in odom.
+                            odom.pose.pose.orientation.y = math.sin(math.pi / 8.)
+                            odom.pose.pose.orientation.w = math.cos(math.pi / 8.)
                         odom_pub.publish(odom)
                         tf = TransformStamped()
                         tf.header = Header(stamp=stamp, frame_id='map')
@@ -81,7 +126,7 @@ def test_preview_pipeline_produces_paths_and_cancels_on_localization_loss(tmp_pa
                         status = TrackingStatus()
                         status.header = Header(stamp=stamp, frame_id='map')
                         status.odom_frame_id = 'odom'
-                        status.sensor_frame_id = 'lidar'
+                        status.sensor_frame_id = 'livox_frame' if sensor_backend == 'mid360' else 'lidar'
                         status.valid = valid
                         status.status = 'tracking' if valid else 'fix_expired'
                         status.fix_stamp = stamp

@@ -92,6 +92,13 @@ class RelocalizationNode : public rclcpp::Node {
     fine.max_rotation_correction = declare_parameter<double>(
       "fine.max_rotation_correction_deg", fine.max_rotation_correction * 180.0 / M_PI) *
       M_PI / 180.0;
+    const double max_gravity_angle_deg = declare_parameter<double>(
+      "fine.max_gravity_angle_deg", 180.0);
+    if (!std::isfinite(max_gravity_angle_deg) || max_gravity_angle_deg <= 0.0 ||
+        max_gravity_angle_deg > 180.0) {
+      throw std::invalid_argument("fine.max_gravity_angle_deg must be in (0, 180]");
+    }
+    fine.max_gravity_angle = max_gravity_angle_deg * M_PI / 180.0;
     fine_registration_ = std::make_unique<relocalization_processing::FineRegistration>(
       processor_->database(), fine);
     relocalization_processing::TrackingConfig tracking;
@@ -160,9 +167,9 @@ class RelocalizationNode : public rclcpp::Node {
       query.frames_per_query, processor_->database().radius(), tf_timeout_);
     RCLCPP_INFO(get_logger(), "TF listener defaults: dynamic=best_effort, static=reliable/transient_local");
     RCLCPP_INFO(get_logger(), "ICP refinement: enabled=%s, voxel=%.2f m, max_iterations=%d, overlap>=%.2f, "
-      "RMSE<=%.2f m, publish map->odom=%s",
+      "RMSE<=%.2f m, map->odom gravity angle<=%.1f deg, publish map->odom=%s",
       fine_enabled_ ? "true" : "false", fine.voxel_size, fine.max_iterations, fine.min_overlap, fine.max_rmse,
-      tf_broadcaster_ ? "true" : "false");
+      max_gravity_angle_deg, tf_broadcaster_ ? "true" : "false");
     RCLCPP_INFO(get_logger(), "Pose tracking: up to %.1f Hz from advancing odometry TF, "
       "fix timeout=%.1f s, odometry timeout=%.1f s",
       tracking_rate, tracking.fix_timeout, tracking.odom_timeout);

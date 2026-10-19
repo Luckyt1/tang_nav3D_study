@@ -1,0 +1,7 @@
+{
+  "clangd.path": "${workspaceFolder}/tools/clangd/bin/clangd",
+  "clangd.arguments": [
+    "--background-index",
+    "--query-driver=/usr/bin/c++,/usr/bin/g++,/usr/bin/cc,/usr/bin/gcc"
+  ]
+}

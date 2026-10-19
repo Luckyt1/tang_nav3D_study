@@ -302,7 +302,7 @@ if(BUILD_TESTING)
   ament_add_pytest_test(test_relocalization_bridge test/test_relocalization_bridge.py)
   ament_add_pytest_test(test_navigation_bridge test/test_navigation_bridge.py TIMEOUT 45)
   ament_add_pytest_test(test_navigation_launch test/test_navigation_launch.py)
-  ament_add_pytest_test(test_navigation_pipeline test/test_navigation_pipeline.py TIMEOUT 75)
+  ament_add_pytest_test(test_navigation_pipeline test/test_navigation_pipeline.py TIMEOUT 150)
   add_test(
     NAME test_cloud_frame
     COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test/test_cloud_frame.py $<TARGET_FILE:scan_planner_odom>)

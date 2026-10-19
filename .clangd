@@ -1,0 +1,8 @@
+CompileFlags:
+  CompilationDatabase: build
+
+---
+If:
+  PathMatch: src/third_party/Point-lio/.*
+CompileFlags:
+  CompilationDatabase: build/point_lio_study_tests
